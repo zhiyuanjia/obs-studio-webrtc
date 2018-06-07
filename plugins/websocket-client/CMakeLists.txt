@@ -25,6 +25,7 @@ include_directories( ${CURL_INCLUDE_DIR} )
 #
 set( websocketclient_SOURCES 
   JanusWebsocketClientImpl.cpp
+  SportsBoothWebsocketClientImpl.cpp
   SpankChainWebsocketClientImpl.cpp
   WebsocketClient.cpp
   restclient-cpp/source/connection.cc
@@ -41,6 +42,7 @@ endif()
 set( websocketclient_HEADERS
   json.hpp
   JanusWebsocketClientImpl.h
+  SportsBoothWebsocketClientImpl.h
   SpankChainWebsocketClientImpl.h
   WebsocketClient.h
   )
