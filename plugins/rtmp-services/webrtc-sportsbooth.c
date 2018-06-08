@@ -1,7 +1,7 @@
 #include<obs-module.h>
 
 struct webrtc_sportsbooth {
-    char *server, *room;
+    char *token, *room;
 };
 
 static const char *webrtc_sportsbooth_name(void *unused)
@@ -14,10 +14,10 @@ static void webrtc_sportsbooth_update(void *data, obs_data_t *settings)
 {
 	struct webrtc_sportsbooth *service = data;
 
-    bfree(service->server);
+	bfree(service->token);
 	bfree(service->room);
 
-	service->server = bstrdup(obs_data_get_string(settings, "server"));
+	service->token = bstrdup(obs_data_get_string(settings, "token"));
 	service->room = bstrdup(obs_data_get_string(settings, "room"));
 }
 
@@ -25,7 +25,7 @@ static void webrtc_sportsbooth_destroy(void *data)
 {
 	struct webrtc_sportsbooth *service = data;
 
-	bfree(service->server);
+	bfree(service->token);
 	bfree(service->room);
 	bfree(service);
 }
@@ -45,10 +45,9 @@ static obs_properties_t *webrtc_sportsbooth_properties(void *unused)
 
 	obs_properties_t *ppts = obs_properties_create();
 
-	obs_properties_add_text(ppts, "server", "Server Name", OBS_TEXT_DEFAULT);
-
 	obs_properties_add_text(ppts, "room", "Server Room", OBS_TEXT_DEFAULT);
 
+	obs_properties_add_text(ppts, "token", obs_module_text("Token"),OBS_TEXT_PASSWORD);
 
 
 	return ppts;
@@ -56,14 +55,20 @@ static obs_properties_t *webrtc_sportsbooth_properties(void *unused)
 
 static const char *webrtc_sportsbooth_url(void *data)
 {
-	struct webrtc_sportsbooth *service = data;
-	return service->server;
+	return "wss://worsh.tv/websocket/websocket";
 }
+
 
 static const char *webrtc_sportsbooth_room(void *data)
 {
 	struct webrtc_sportsbooth *service = data;
 	return service->room;
+}
+
+static const char *webrtc_sportsbooth_token(void *data)
+{
+	struct webrtc_sportsbooth *service = data;
+	return service->token;
 }
 
 struct obs_service_info webrtc_sportsbooth_service = {
@@ -74,5 +79,6 @@ struct obs_service_info webrtc_sportsbooth_service = {
 	.update         = webrtc_sportsbooth_update,
 	.get_properties = webrtc_sportsbooth_properties,
 	.get_url        = webrtc_sportsbooth_url,
-	.get_room       = webrtc_sportsbooth_room
+	.get_room       = webrtc_sportsbooth_room,
+	.get_password   = webrtc_sportsbooth_token
 };

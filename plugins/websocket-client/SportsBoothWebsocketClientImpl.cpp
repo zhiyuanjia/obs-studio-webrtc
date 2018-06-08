@@ -86,7 +86,7 @@ bool SportsBoothWebsocketClientImpl::connect(std::string url, long long room, st
             {"plugin", "janus.plugin.videoroom"},
           };
           
-          connection->send(attachPlugin.dump());
+//          connection->send(attachPlugin.dump());
           //Logged
           logged = true;
 
@@ -112,7 +112,7 @@ bool SportsBoothWebsocketClientImpl::connect(std::string url, long long room, st
               }
             }
           };
-          connection->send(joinRoom.dump());
+//          connection->send(joinRoom.dump());
           listener->onLogged(session_id);
         }
       }
@@ -123,20 +123,22 @@ bool SportsBoothWebsocketClientImpl::connect(std::string url, long long room, st
     client.set_open_handler([=](websocketpp::connection_hdl con){
       //Launch event
       listener->onConnected();
-      //Login command
-      json login = {
-        {"janus", "create"},
-        {"transaction",std::to_string(rand()) },
-        { "payload",
-          {
-            { "username", username},
-            { "token", token},
-            { "room", room}
-          }
-        }
-      };
-      //Serialize and send
-      connection->send(login.dump());
+      connection->send("CONNECT\naccept-version:1.0,1.1\nlogin: ruddell\nheart-beat:30000,0\n\n\0");
+
+        //Login command
+//      json login = {
+//        {"janus", "create"},
+//        {"transaction",std::to_string(rand()) },
+//        { "payload",
+//          {
+//            { "username", username},
+//            { "token", token},
+//            { "room", room}
+//          }
+//        }
+//      };
+//      //Serialize and send
+//      connection->send(login.dump());
       
     });
     //Set close hanlder
@@ -152,8 +154,7 @@ bool SportsBoothWebsocketClientImpl::connect(std::string url, long long room, st
     //Register our tls hanlder
     client.set_tls_init_handler([&](websocketpp::connection_hdl connection) {
       //Create context
-      auto ctx = websocketpp::lib::make_shared<asio::ssl::context>(asio::ssl::context::tlsv1);
-      
+      auto ctx = websocketpp::lib::make_shared<asio::ssl::context>(asio::ssl::context::tlsv12);
       try {
         ctx->set_options(asio::ssl::context::default_workarounds |
                  asio::ssl::context::no_sslv2 |
@@ -165,13 +166,15 @@ bool SportsBoothWebsocketClientImpl::connect(std::string url, long long room, st
       return ctx;
     });
     //Get connection
+    //Create websocket connection and token
+    std::string wss = url + "?access_token=" + token;
     connection = client.get_connection(url, ec);
     
     if (ec) {
       std::cout << "could not create connection because: " << ec.message() << std::endl;
       return 0;
     }
-    connection->add_subprotocol("janus-protocol");
+//    connection->add_subprotocol("janus-protocol");
     
     // Note that connect here only requests a connection. No network messages are
     // exchanged until the event loop starts running in the next line.
@@ -202,27 +205,19 @@ bool SportsBoothWebsocketClientImpl::open(const std::string &sdp, const std::str
 {
   try
   {
+      json data = {
+              { "user" ,       "ruddell" },
+              { "sdpOffer",     sdp },
+              { "mediaType",    "video" },
+              { "privacy",      "public" },
+              { "splitscreen",  false },
+              { "obsInput",     true },
+      };
     //Login command
     json open = {
-      { "janus"      , "message" },
-      { "session_id"  , session_id},
-      { "handle_id"  , handle_id},
-      { "transaction"  , std::to_string(rand()) },
-      { "body" ,
-        {
-          { "request" ,"configure" },
-          {"muted", false},
-          {"video", true},
-          {"audio", true},
-        }
-      },
-      { "jsep" ,
-        {
-          { "type" ,"offer" },
-          {"sdp"  ,sdp},
-          {"trickle",true},
-        }
-      }
+      { "method", "presenter" },
+      { "treeId", "ruddell" },
+      { "data",   data.dump() }
     };
     //Serialize and send
     if (connection->send(open.dump()))
@@ -242,20 +237,19 @@ bool SportsBoothWebsocketClientImpl::trickle(const std::string &mid, int index, 
     //Check if it is last
     if (!last)
     {
-      //Login command
-      json trickle = {
-        { "janus"    , "trickle" },
-        { "handle_id"  , handle_id },
-        { "session_id" , session_id },
-        { "transaction" , "trickle" + std::to_string(rand()) },
-        { "candidate" ,
-          {
-            { "sdpMid"   , mid  },
-            { "sdpMLineIndex" , index  } ,
-            { "candidate"  , candidate }
-          }
-        }
-      };
+        json data = {
+                { "user" ,       "ruddell" },
+                { "treeId", "ruddell" },
+                { "candidate", candidate },
+                { "sdpMLineIndex", index },
+                { "sdpMid", mid },
+        };
+        json trickle = {
+                { "method", "onIceCandidate" },
+                { "treeId", "ruddell" },
+                { "data",   data.dump() }
+        };
+
       //Serialize and send
       if (connection->send(trickle.dump()))
         return false;
@@ -265,17 +259,17 @@ bool SportsBoothWebsocketClientImpl::trickle(const std::string &mid, int index, 
     }
     else
     {
-      json trickle = {
-        { "janus"    , "trickle" },
-        { "handle_id"  , handle_id },
-        { "session_id" , session_id },
-        { "transaction" , "trickle" + std::to_string(rand()) },
-        { "candidate"  ,
-          {
-            { "completed", true },
-          }
-        }
-      };
+        json data = {
+                { "user" ,       "ruddell" },
+                { "treeId", "ruddell" },
+                { "candidate", { "completed", true } }
+        };
+        json trickle = {
+                { "method", "onIceCandidate" },
+                { "treeId", "ruddell" },
+                { "data",   data.dump() }
+        };
+
       if (connection->send(trickle.dump()))
         return false;
       
@@ -302,7 +296,7 @@ void SportsBoothWebsocketClientImpl::keepConnectionAlive()
       };
       try
       {
-        connection->send(keepaliveMsg.dump());
+//        connection->send(keepaliveMsg.dump());
       }
       catch (websocketpp::exception const & e)
       {
