@@ -1,5 +1,7 @@
 #include "SportsBoothWebsocketClientImpl.h"
 #include "json.hpp"
+#include <boost/algorithm/string.hpp>
+
 using json = nlohmann::json;
 typedef websocketpp::config::asio_client::message_type::ptr message_ptr;
 
@@ -34,9 +36,32 @@ bool SportsBoothWebsocketClientImpl::connect(std::string url, long long room, st
       //get response
 //      auto msg = json::parse(frame->get_payload());
 
-      std::cout << x << std::endl << std::endl << std::endl ;
-      std::cout << "test" << std::endl << std::endl << std::endl ;
+        std::vector<std::string> strs;
+        boost::split(strs,x,boost::is_any_of("\n"));
 
+        std::cout << "* size of the vector: " << strs.size() << std::endl;
+        for (size_t i = 0; i < strs.size(); i++)
+            std::cout << strs[i] << std::endl;
+
+
+        if (strs.front() == "CONNECTED") {
+            connection->send("SUBSCRIBE\nid:sub-chat\ndestination:/topic/chat.stream.ruddell\n\n\u0000", 63);
+            // todo figure out how to wait here
+            sleep(5);
+            connection->send("SEND\ndestination:/topic/chat.stream.send.ruddell\ncontent-length:88\n\n{\"message\":\"from obs!\",\"userImg\":\"https://cdn.sportsbooth.tv/profile/default_thumb.jpg\"}\u0000", 157);
+        }
+
+        if (strs.front() == "MESSAGE") {
+            auto msg = json::parse(strs[8]);
+            std::cout << msg["sessionId"] << std::endl;
+
+            // subscribe('/topic/tree.status-user' + sessionId)
+
+        }
+        if (strs.size() == 2) {
+//            std::cout << "Hearbeat" << std::endl;
+            connection->send("CONNECT\naccept-version:1.1,1.0\nheart-beat:10000,10000\n\n", 55);
+        }
 //
 //      //Check if it is an event
 //      if (msg.find("janus") == msg.end())
