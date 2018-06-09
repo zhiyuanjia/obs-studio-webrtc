@@ -32,90 +32,92 @@ bool SportsBoothWebsocketClientImpl::connect(std::string url, long long room, st
     client.set_message_handler( [=](websocketpp::connection_hdl con, message_ptr frame) {
       const char* x = frame->get_payload().c_str();
       //get response
-      auto msg = json::parse(frame->get_payload());
-      std::cout << x << std::endl << std::endl << std::endl ;
-      
-      
-      //Check if it is an event
-      if (msg.find("janus") == msg.end())
-        //Ignore
-        return;
-      
-      std::string id = msg["janus"];
-      
-      if (msg.find("ack") != msg.end()){
-        // Ignore
-        return;
-      }
-      
-      //Get response
-      std::string response = msg["janus"];
-      if (msg.find("jsep") != msg.end())
-      {
-        std::string sdp = msg["jsep"]["sdp"];
-        listener->onOpened(sdp);
-        return;
-      }
-      
-      //Check type
-      if (id.compare("success") == 0)
-      {
-        //Get transaction id
-        if (msg.find("transaction") == msg.end())
-          //Ignore
-          return;
-        
-        if (msg.find("data") == msg.end()){
-          //Ignore
-          return;
-        }
-        //Get the Data session
-        auto data = msg["data"];
-        
-        //Server is sending response twice, ingore second one
-        if (!logged)
-        {
-          //Get response code
-          session_id = data["id"];
-          //Launch logged event
-          //create handle command
-          json attachPlugin = {
-            {"janus", "attach" },
-            {"transaction", std::to_string(rand()) },
-            {"session_id", session_id},
-            {"plugin", "janus.plugin.videoroom"},
-          };
-          
-//          connection->send(attachPlugin.dump());
-          //Logged
-          logged = true;
+//      auto msg = json::parse(frame->get_payload());
 
-          //Keep the connection alive
-          is_running.store(true);
-          thread_keepAlive = std::thread([&]() {
-            SportsBoothWebsocketClientImpl::keepConnectionAlive();
-          });
-        }else {
-          handle_id = data["id"];
-          
-          json joinRoom = {
-            {"janus", "message" },
-            {"transaction", std::to_string(rand())},
-            {"session_id", session_id},
-            {"handle_id", handle_id},
-            { "body" ,
-              {
-                { "room" , room },
-                {"display" , "OBS"},
-                {"ptype"  , "publisher"},
-                {"request" , "join"}
-              }
-            }
-          };
-//          connection->send(joinRoom.dump());
-          listener->onLogged(session_id);
-        }
-      }
+      std::cout << x << std::endl << std::endl << std::endl ;
+      std::cout << "test" << std::endl << std::endl << std::endl ;
+
+//
+//      //Check if it is an event
+//      if (msg.find("janus") == msg.end())
+//        //Ignore
+//        return;
+//
+//      std::string id = msg["janus"];
+//
+//      if (msg.find("ack") != msg.end()){
+//        // Ignore
+//        return;
+//      }
+//
+//      //Get response
+//      std::string response = msg["janus"];
+//      if (msg.find("jsep") != msg.end())
+//      {
+//        std::string sdp = msg["jsep"]["sdp"];
+//        listener->onOpened(sdp);
+//        return;
+//      }
+//
+//      //Check type
+//      if (id.compare("success") == 0)
+//      {
+//        //Get transaction id
+//        if (msg.find("transaction") == msg.end())
+//          //Ignore
+//          return;
+//
+//        if (msg.find("data") == msg.end()){
+//          //Ignore
+//          return;
+//        }
+//        //Get the Data session
+//        auto data = msg["data"];
+//
+//        //Server is sending response twice, ingore second one
+//        if (!logged)
+//        {
+//          //Get response code
+//          session_id = data["id"];
+//          //Launch logged event
+//          //create handle command
+//          json attachPlugin = {
+//            {"janus", "attach" },
+//            {"transaction", std::to_string(rand()) },
+//            {"session_id", session_id},
+//            {"plugin", "janus.plugin.videoroom"},
+//          };
+//
+////          connection->send(attachPlugin.dump());
+//          //Logged
+//          logged = true;
+//
+//          //Keep the connection alive
+//          is_running.store(true);
+//          thread_keepAlive = std::thread([&]() {
+//            SportsBoothWebsocketClientImpl::keepConnectionAlive();
+//          });
+//        }else {
+//          handle_id = data["id"];
+//
+//          json joinRoom = {
+//            {"janus", "message" },
+//            {"transaction", std::to_string(rand())},
+//            {"session_id", session_id},
+//            {"handle_id", handle_id},
+//            { "body" ,
+//              {
+//                { "room" , room },
+//                {"display" , "OBS"},
+//                {"ptype"  , "publisher"},
+//                {"request" , "join"}
+//              }
+//            }
+//          };
+////          connection->send(joinRoom.dump());
+//          listener->onLogged(session_id);
+//        }
+//      }
     });
     
     
@@ -123,7 +125,8 @@ bool SportsBoothWebsocketClientImpl::connect(std::string url, long long room, st
     client.set_open_handler([=](websocketpp::connection_hdl con){
       //Launch event
       listener->onConnected();
-      connection->send("CONNECT\naccept-version:1.0,1.1\nlogin: ruddell\nheart-beat:30000,0\n\n\0");
+        // TODO: THE NULL TERMINATOR IS STRIPPED, ERROR RETURNED WITH []
+      connection->send("CONNECT\naccept-version:1.0,1.1\nlogin: ruddell\nheart-beat:30000,0\n\n\u0000", 67);
 
         //Login command
 //      json login = {
