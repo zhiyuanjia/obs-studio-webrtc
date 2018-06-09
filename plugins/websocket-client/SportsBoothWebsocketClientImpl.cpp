@@ -126,7 +126,7 @@ bool SportsBoothWebsocketClientImpl::connect(std::string url, long long room, st
       //Launch event
       listener->onConnected();
         // TODO: THE NULL TERMINATOR IS STRIPPED, ERROR RETURNED WITH []
-      connection->send("CONNECT\naccept-version:1.0,1.1\nlogin: ruddell\nheart-beat:30000,0\n\n\u0000", 67);
+      connection->send("CONNECT\naccept-version:1.1,1.0\nheart-beat:10000,10000\n\n\u0000", 56);
 
         //Login command
 //      json login = {
