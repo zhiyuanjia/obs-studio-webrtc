@@ -21,6 +21,7 @@
 
 #include "api/mediastreaminterface.h"
 #include "api/peerconnectioninterface.h"
+#include "api/jsep.h"
 #include "modules/video_capture/video_capture.h"
 #include "modules/video_capture/video_capture_defines.h"
 #include "modules/video_capture/video_capture_factory.h"
@@ -75,6 +76,7 @@ public:
   virtual void onLogged(int code);
   virtual void onLoggedError(int code);
   virtual void onOpened(const std::string &sdp);
+  virtual void onTrickle(const std::string &mid, int index, const std::string &candidate);
   virtual void onOpenedError(int code);
   virtual void onDisconnected();
 

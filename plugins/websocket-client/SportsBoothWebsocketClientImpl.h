@@ -22,19 +22,21 @@ public:
     virtual bool connect(std::string url, long long room, std::string username, std::string token, WebsocketClient::Listener* listener);
     virtual bool open(const std::string &sdp, const std::string& codec = "");
     virtual bool trickle(const std::string &mid, int index, const std::string &candidate, bool last);
+    virtual bool subscribeToPath(const std::string &path, const std::string &sub_id);
+    virtual bool sendMessage(const std::string &path, const std::string &content);
     virtual bool disconnect(bool wait);
     void keepConnectionAlive();
 
 private:
     bool logged;
-    long long session_id;
+    std::string session_id;
     long long handle_id;
 
     std::atomic<bool> is_running;
     std::future<void> handle;
     std::thread thread;
     std::thread thread_keepAlive;
-   
+
     Client client;
     Client::connection_ptr connection;
 };

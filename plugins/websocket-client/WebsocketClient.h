@@ -32,6 +32,7 @@ public:
     virtual void onLogged(int code) = 0;
     virtual void onLoggedError(int code) = 0;
     virtual void onOpened(const std::string &sdp) = 0;
+    virtual void onTrickle(const std::string &mid, int index, const std::string &candidate) = 0;
     virtual void onOpenedError(int code) = 0;
     virtual void onDisconnected() = 0;
   };

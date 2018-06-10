@@ -45,22 +45,51 @@ bool SportsBoothWebsocketClientImpl::connect(std::string url, long long room, st
 
 
         if (strs.front() == "CONNECTED") {
-            connection->send("SUBSCRIBE\nid:sub-chat\ndestination:/topic/chat.stream.ruddell\n\n\u0000", 63);
+            subscribeToPath("/topic/chat.stream.ruddell", "chat");
             // todo figure out how to wait here
-            sleep(5);
-            connection->send("SEND\ndestination:/topic/chat.stream.send.ruddell\ncontent-length:88\n\n{\"message\":\"from obs!\",\"userImg\":\"https://cdn.sportsbooth.tv/profile/default_thumb.jpg\"}\u0000", 157);
+            std::this_thread::sleep_for(std::chrono::seconds(5));
+//            sleep(5);
         }
 
         if (strs.front() == "MESSAGE") {
             auto msg = json::parse(strs[8]);
-            std::cout << msg["sessionId"] << std::endl;
-
-            // subscribe('/topic/tree.status-user' + sessionId)
-
+            std::string method = "chat";
+            if (msg.find("method") != msg.end()) {
+                method = msg["method"];
+            }
+            std::cout << method << std::endl;
+            if (method == "chat") {
+                std::cout << "Got SessionID from Worsh!" << std::endl;
+                session_id = msg["sessionId"];
+                subscribeToPath("/topic/tree.status-user" + session_id, "tree");
+                sleep(2);
+                listener->onLogged(1);
+            } else if (method == "obsAnswer") {
+                std::cout << "Got SDP Answer from Worsh! - Need to parse and send to plugin" << std::endl;
+                std::string parsedData = msg["data"];
+                std::cout << parsedData << std::endl;
+                auto parsedDataJson = json::parse(parsedData);
+//                std::string sdpAnswer = parsedData["sdpAnswer"];
+                listener->onOpened(parsedDataJson["sdpAnswer"]);
+            } else if (method == "iceCandidate") {
+                std::cout << "Got ICE Candidate from Worsh! - Need to parse and send to plugin" << std::endl;
+                std::string parsedData = msg["data"];
+                auto parsedDataJson = json::parse(parsedData);
+                std::string candidate = parsedDataJson["candidate"];
+                int sdpMLineIndex = parsedDataJson["sdpMLineIndex"];
+                std::string sdpMid = parsedDataJson["sdpMid"];
+                listener->onTrickle(sdpMid, sdpMLineIndex, candidate);
+            } else {
+                std::cout << "Unhandled method" << std::endl;
+            }
         }
         if (strs.size() == 2) {
-//            std::cout << "Hearbeat" << std::endl;
-            connection->send("CONNECT\naccept-version:1.1,1.0\nheart-beat:10000,10000\n\n", 55);
+            std::cout << "Hearbeat" << std::endl;
+            connection->send("\n", 1);
+            if (session_id.empty()) {
+                std::cout << "Sending chat to get session id" << std::endl;
+                sendMessage("/topic/chat.stream.send.ruddell", "{\"message\":\"from obs!\",\"userImg\":\"https://cdn.sportsbooth.tv/profile/default_thumb.jpg\"}");
+            }
         }
 //
 //      //Check if it is an event
@@ -77,13 +106,6 @@ bool SportsBoothWebsocketClientImpl::connect(std::string url, long long room, st
 //
 //      //Get response
 //      std::string response = msg["janus"];
-//      if (msg.find("jsep") != msg.end())
-//      {
-//        std::string sdp = msg["jsep"]["sdp"];
-//        listener->onOpened(sdp);
-//        return;
-//      }
-//
 //      //Check type
 //      if (id.compare("success") == 0)
 //      {
@@ -144,8 +166,8 @@ bool SportsBoothWebsocketClientImpl::connect(std::string url, long long room, st
 //        }
 //      }
     });
-    
-    
+
+
     //When we are open
     client.set_open_handler([=](websocketpp::connection_hdl con){
       //Launch event
@@ -167,7 +189,7 @@ bool SportsBoothWebsocketClientImpl::connect(std::string url, long long room, st
 //      };
 //      //Serialize and send
 //      connection->send(login.dump());
-      
+
     });
     //Set close hanlder
     client.set_close_handler([=](...) {
@@ -196,31 +218,33 @@ bool SportsBoothWebsocketClientImpl::connect(std::string url, long long room, st
     //Get connection
     //Create websocket connection and token
     std::string wss = url + "?access_token=" + token;
-    connection = client.get_connection(url, ec);
-    
+      std::cout << "Connecting to " + wss << std::endl;
+
+      connection = client.get_connection(wss, ec);
+
     if (ec) {
       std::cout << "could not create connection because: " << ec.message() << std::endl;
       return 0;
     }
 //    connection->add_subprotocol("janus-protocol");
-    
+
     // Note that connect here only requests a connection. No network messages are
     // exchanged until the event loop starts running in the next line.
     client.connect(connection);
-    
+
     //Async
     thread = std::thread([&]() {
       // Start the ASIO io_service run loop
       // this will cause a single connection to be made to the server. c.run()
       // will exit when this connection is closed.
-      
+
       client.run();
     });
-    
-    
+
+
   }
-  
-  
+
+
   catch (websocketpp::exception const & e) {
     std::cout << e.what() << std::endl;
     return false;
@@ -231,6 +255,7 @@ bool SportsBoothWebsocketClientImpl::connect(std::string url, long long room, st
 
 bool SportsBoothWebsocketClientImpl::open(const std::string &sdp, const std::string& codec)
 {
+    // send the offer in the Presenter Method
   try
   {
       json data = {
@@ -247,9 +272,10 @@ bool SportsBoothWebsocketClientImpl::open(const std::string &sdp, const std::str
       { "treeId", "ruddell" },
       { "data",   data.dump() }
     };
-    //Serialize and send
-    if (connection->send(open.dump()))
-      return false;
+
+      if (sendMessage("/topic/tree.status.update", open.dump())) {
+          return true;
+      }
   }
   catch (websocketpp::exception const & e) {
     std::cout << e.what() << std::endl;
@@ -262,7 +288,9 @@ bool SportsBoothWebsocketClientImpl::trickle(const std::string &mid, int index, 
 {
   try
   {
-    //Check if it is last
+      // TODO: wait for ice connection state?
+//      std::this_thread::sleep_for(std::chrono::seconds(5));
+      //Check if it is last
     if (!last)
     {
         json data = {
@@ -278,12 +306,11 @@ bool SportsBoothWebsocketClientImpl::trickle(const std::string &mid, int index, 
                 { "data",   data.dump() }
         };
 
-      //Serialize and send
-      if (connection->send(trickle.dump()))
-        return false;
-      
-      //OK
-      return true;
+        if (sendMessage("/topic/tree.status.update", trickle.dump()))
+            return false;
+
+          //OK
+        return true;
     }
     else
     {
@@ -300,7 +327,7 @@ bool SportsBoothWebsocketClientImpl::trickle(const std::string &mid, int index, 
 
       if (connection->send(trickle.dump()))
         return false;
-      
+
     }
   }
   catch (websocketpp::exception const & e) {
@@ -320,7 +347,7 @@ void SportsBoothWebsocketClientImpl::keepConnectionAlive()
       json keepaliveMsg = {
         { "janus"    , "keepalive" },
         { "session_id" , session_id },
-        { "transaction" , "keepalive-" + std::to_string(rand()) },  
+        { "transaction" , "keepalive-" + std::to_string(rand()) },
       };
       try
       {
@@ -338,42 +365,75 @@ void SportsBoothWebsocketClientImpl::keepConnectionAlive()
 
 bool SportsBoothWebsocketClientImpl::disconnect(bool wait)
 {
-  
-  try
-  {
-    // Stop keepAlive
-    if (thread_keepAlive.joinable()){
-      is_running.store(false);
-      thread_keepAlive.join();
-    }
 
-    //Stop client
-    client.close(connection, websocketpp::close::status::normal, std::string("disconnect"));
-    client.stop();
-    
-    //Don't wait for connection close
-    if (thread.joinable())
+    try
     {
-      //If sswe have to wait
-      if (wait) {
-        thread.join();
-      }
-      else {
-        //Remov hanlders
-        client.set_open_handler([](...){});
-        client.set_close_handler([](...){});
-        client.set_fail_handler([](...) {});
-        //Detach trhead
-        thread.detach();
-        
-      }
+        // Stop keepAlive
+        if (thread_keepAlive.joinable()){
+            is_running.store(false);
+            thread_keepAlive.join();
+        }
+
+        //Stop client
+        client.close(connection, websocketpp::close::status::normal, std::string("disconnect"));
+        client.stop();
+
+        //Don't wait for connection close
+        if (thread.joinable())
+        {
+            //If sswe have to wait
+            if (wait) {
+                thread.join();
+            }
+            else {
+                //Remov hanlders
+                client.set_open_handler([](...){});
+                client.set_close_handler([](...){});
+                client.set_fail_handler([](...) {});
+                //Detach trhead
+                thread.detach();
+
+            }
+        }
+
     }
-    
-  }
-  catch (websocketpp::exception const & e) {
-    std::cout << e.what() << std::endl;
-    return false;
-  }
-  //OK
-  return true;
+    catch (websocketpp::exception const & e) {
+        std::cout << e.what() << std::endl;
+        return false;
+    }
+//OK
+    return true;
+}
+
+bool SportsBoothWebsocketClientImpl::subscribeToPath(const std::string &path, const std::string &sub_id)
+{
+    std::cout << "Subscribing to: " + path << std::endl;
+    try
+    {
+        std::string subscribeMessage = "SUBSCRIBE\nid:sub-" + sub_id + "\ndestination:" + path + "\n\n\u0000";
+        if (connection->send(subscribeMessage.c_str(), subscribeMessage.length() + 1))
+            return false;
+        //OK
+        return true;
+    }
+    catch (websocketpp::exception const & e) {
+        std::cout << e.what() << std::endl;
+        return false;
+    }
+}
+bool SportsBoothWebsocketClientImpl::sendMessage(const std::string &path, const std::string &content)
+{
+    std::cout << "Sending message to: " + path << std::endl;
+    try
+    {
+        std::string message = "SEND\ndestination:" + path + "\ncontent-length:" + std::to_string(content.length()) + "\n\n" + content + "\u0000";
+        if (connection->send(message.c_str(), message.length() + 1))
+            return false;
+        //OK
+        return true;
+    }
+    catch (websocketpp::exception const & e) {
+        std::cout << e.what() << std::endl;
+        return false;
+    }
 }

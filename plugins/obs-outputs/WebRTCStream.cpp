@@ -311,6 +311,15 @@ void WebRTCStream::onConnected()
     
 }
 
+void WebRTCStream::onTrickle(const std::string &mid, int index, const std::string &candidate)
+{
+    //LOG
+    info("onTrickle");
+    webrtc::SdpParseError* ec;
+    webrtc::IceCandidateInterface* iceCandidateInterface = webrtc::CreateIceCandidate(mid, index, candidate, ec);
+    pc->AddIceCandidate(iceCandidateInterface);
+}
+
 void WebRTCStream::onLogged(int code)
 {
     //LOG
