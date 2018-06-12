@@ -25,17 +25,17 @@ public:
     virtual bool subscribeToPath(const std::string &path, const std::string &sub_id);
     virtual bool sendMessage(const std::string &path, const std::string &content);
     virtual bool disconnect(bool wait);
-    void keepConnectionAlive();
+    void sendThread();
 
 private:
-    bool logged;
+    std::string login;
     std::string session_id;
-    long long handle_id;
 
     std::atomic<bool> is_running;
     std::future<void> handle;
     std::thread thread;
-    std::thread thread_keepAlive;
+    std::thread thread_send;
+    std::queue<std::string> msgs_to_send;
 
     Client client;
     Client::connection_ptr connection;
