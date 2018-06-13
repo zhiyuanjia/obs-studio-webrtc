@@ -174,6 +174,7 @@ bool SportsBoothWebsocketClientImpl::open(const std::string &sdp, const std::str
         sendMessage("/topic/tree.status.update", open.dump());
     }
     catch (websocketpp::exception const & e) {
+        std::cout << "Websocket Exception Caught!" << std::endl;
         std::cout << e.what() << std::endl;
         return false;
     }
