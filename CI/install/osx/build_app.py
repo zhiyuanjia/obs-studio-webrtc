@@ -71,11 +71,17 @@ def add(name, external=False, copy_as=None):
 		copy_as = name.split("/")[-1]
 	if name[0] != "/":
 		name = build_path+"/"+name
-	t = LibTarget(name, external, copy_as)
-	if t in inspected:
-		return
-	inspect.append(t)
-	inspected.add(t)
+	if ("cosmo" in name):
+		name = "/usr/local/Cellar/openssl@1.1/1.1.0h/lib/" + name.split("/")[len(name.split("/")) - 1]
+	if ("5.4.1" in name):
+		print "OLD QT LIB FOUND - FIX THIS"
+		name = name.replace("5.4.1", "5.10.1")
+	if ("QtDeclarative.framework" not in name):
+		t = LibTarget(name, external, copy_as)
+		if t in inspected:
+			return
+		inspect.append(t)
+		inspected.add(t)
 
 
 for i in candidate_paths:
