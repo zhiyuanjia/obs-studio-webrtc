@@ -72,11 +72,9 @@ def add(name, external=False, copy_as=None):
 	if name[0] != "/":
 		name = build_path+"/"+name
 	if ("cosmo" in name):
-		name = "/usr/local/Cellar/openssl@1.1/1.1.0h/lib/" + name.split("/")[len(name.split("/")) - 1]
-	if ("5.4.1" in name):
-		print "OLD QT LIB FOUND - FIX THIS"
-		name = name.replace("5.4.1", "5.10.1")
-	if ("QtDeclarative.framework" not in name):
+		name = "/usr/local/lib/" + name.split("/")[len(name.split("/")) - 1]
+		print "COSMO LIB FOUND"
+	if ("5.4.1" not in name):
 		t = LibTarget(name, external, copy_as)
 		if t in inspected:
 			return
@@ -120,7 +118,8 @@ while inspect:
 		continue
 	out = check_output("{0}otool -L '{1}'".format(args.prefix, path), shell=True,
 			universal_newlines=True)
-
+	if "5.4.1" in path:
+		print "{0}otool -L '{1}'".format(args.prefix, path)
 	if "QtCore" in path:
 		add_plugins(path, "platforms")
 		add_plugins(path, "imageformats")
@@ -153,6 +152,14 @@ changes = list()
 for path, external, copy_as in inspected:
 	if not external:
 		continue #built with install_rpath hopefully
+	print("xxxxx")
+	print(path)
+	if ("libcrypto" in path):
+		libcrypto_path = "/Users/cosmo/DEV/libwebrtc-cmake/build_release/openssl_inst/lib/libcrypto.1.1.dylib"
+		changes.append("-change '%s' '@rpath/%s'"%(libcrypto_path, copy_as))
+	if ("libssl" in path):
+		libssl_path = "/Users/cosmo/DEV/libwebrtc-cmake/build_release/openssl_inst/lib/libssl.1.1.dylib"
+		changes.append("-change '%s' '@rpath/%s'"%(libssl_path, copy_as))
 	changes.append("-change '%s' '@rpath/%s'"%(path, copy_as))
 changes = " ".join(changes)
 
@@ -225,7 +232,14 @@ for path, external, copy_as in inspected:
 		filename = prefix + filename
 
 	cmd = "{0}install_name_tool {1} {2} {3} '{4}'".format(args.prefix, changes, id_, rpath, filename)
+	if ("obs-output" in filename):
+		print(cmd)
 	call(cmd, shell=True)
+
+# cmd('{0}install_name_tool -change {1} {2} {3}/bin/obs'.format(
+# 	args.prefix, actual_sparkle_path, sparkle_path.format('../..'), prefix))
+#
+# -change '/usr/local/Cellar/openssl@1.1/1.1.0h/lib/libcrypto.1.1.dylib' '@rpath/libcrypto.1.1.dylib'
 
 try:
 	rename("tmp", app_name)
