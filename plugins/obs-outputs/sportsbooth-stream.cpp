@@ -120,12 +120,16 @@ extern "C" obs_properties_t *sportsbooth_stream_properties(void *unused)
 
 extern "C" uint64_t sportsbooth_stream_total_bytes_sent(void *data)
 {
-	return 0;
+	//Get stream
+	WebRTCStream* stream = (WebRTCStream*)data;
+	return stream->getBitrate();
 }
 
 extern "C" int sportsbooth_stream_dropped_frames(void *data)
 {
-	return 0;
+  //Get stream
+  WebRTCStream* stream = (WebRTCStream*)data;
+  return stream->getDroppedFrame();
 }
 
 extern "C" float sportsbooth_stream_congestion(void *data)
