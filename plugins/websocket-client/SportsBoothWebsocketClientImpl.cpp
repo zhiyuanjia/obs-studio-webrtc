@@ -1,6 +1,5 @@
 #include "SportsBoothWebsocketClientImpl.h"
 #include "json.hpp"
-#include <boost/algorithm/string.hpp>
 
 using json = nlohmann::json;
 typedef websocketpp::config::asio_client::message_type::ptr message_ptr;
@@ -33,10 +32,15 @@ bool SportsBoothWebsocketClientImpl::connect(std::string url, long long room, st
             const char* x = frame->get_payload().c_str();
             //get response
 
-            std::vector<std::string> strs;
-            boost::split(strs,x,boost::is_any_of("\n"));
+            std::vector<std::string> messageLines;
+            std::string token;
+            std::istringstream tokenStream(x);
+            while (std::getline(tokenStream, token))
+            {
+                messageLines.push_back(token);
+            }
 
-            if (strs.front() == "CONNECTED") {
+            if (messageLines.front() == "CONNECTED") {
                 // once connected, start the send thread and get websocket session info from the server
                 is_running.store(true);
                 thread_send = std::thread([&]() {
@@ -47,8 +51,8 @@ bool SportsBoothWebsocketClientImpl::connect(std::string url, long long room, st
                 subscribeToPath(destination, "session-info" + randomNum);
             }
 
-            if (strs.front() == "MESSAGE") {
-                auto msg = json::parse(strs[8]);
+            if (messageLines.front() == "MESSAGE") {
+                auto msg = json::parse(messageLines[8]);
                 std::string method = "session-info";
                 if (msg.find("method") != msg.end()) {
                     method = msg["method"];
@@ -79,7 +83,7 @@ bool SportsBoothWebsocketClientImpl::connect(std::string url, long long room, st
                     std::cout << "Unhandled method" << std::endl;
                 }
             }
-            if (strs.size() == 2) {
+            if (messageLines.size() == 2) {
                 std::cout << "Heartbeat" << std::endl;
                 msgs_to_send.push("\n");
             }
