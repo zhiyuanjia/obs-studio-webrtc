@@ -83,7 +83,7 @@ bool SportsBoothWebsocketClientImpl::connect(std::string url, long long room, st
                     std::cout << "Unhandled method" << std::endl;
                 }
             }
-            if (messageLines.size() == 2) {
+            if (messageLines.size() == 1) {
                 std::cout << "Heartbeat" << std::endl;
                 msgs_to_send.push("\n");
             }
