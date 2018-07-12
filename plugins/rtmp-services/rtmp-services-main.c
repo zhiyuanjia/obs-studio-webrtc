@@ -14,10 +14,10 @@ OBS_MODULE_USE_DEFAULT_LOCALE("rtmp-services", "en-US")
 #define RTMP_SERVICES_LOG_STR "[rtmp-services plugin] "
 #define RTMP_SERVICES_VER_STR "rtmp-services plugin (libobs " OBS_VERSION ")"
 
-extern struct obs_service_info webrtc_sportsbooth_service;
 extern struct obs_service_info rtmp_common_service;
 extern struct obs_service_info rtmp_custom_service;
 extern struct obs_service_info webrtc_janus_service;
+extern struct obs_service_info webrtc_sportsbooth_service;
 extern struct obs_service_info webrtc_spankchain_service;
 
 static update_info_t *update_info = NULL;
@@ -99,10 +99,10 @@ bool obs_module_load(void)
 	bfree(cache_dir);
 #endif
 
-	obs_register_service(&webrtc_sportsbooth_service);
 	obs_register_service(&rtmp_common_service);
 	obs_register_service(&rtmp_custom_service);
 	obs_register_service(&webrtc_janus_service);
+	obs_register_service(&webrtc_sportsbooth_service);
 	obs_register_service(&webrtc_spankchain_service);
 	return true;
 }
