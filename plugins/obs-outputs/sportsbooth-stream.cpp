@@ -121,8 +121,9 @@ extern "C" obs_properties_t *sportsbooth_stream_properties(void *unused)
 extern "C" uint64_t sportsbooth_stream_total_bytes_sent(void *data)
 {
 	//Get stream
-	WebRTCStream* stream = (WebRTCStream*)data;
-	return stream->getBitrate();
+	// WebRTCStream* stream = (WebRTCStream*)data;
+	// return stream->getBitrate();
+	return 0;
 }
 
 extern "C" int sportsbooth_stream_dropped_frames(void *data)
