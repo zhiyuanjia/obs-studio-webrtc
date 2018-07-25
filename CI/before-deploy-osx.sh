@@ -10,18 +10,14 @@ set -e
 # Generate file name variables
 export GIT_HASH=$(git rev-parse --short HEAD)
 export FILE_DATE=$(date +%Y-%m-%d.%H:%M:%S)
-export FILENAME=$FILE_DATE-$GIT_HASH-$TRAVIS_BRANCH-osx.pkg
+# export FILENAME=$FILE_DATE-$GIT_HASH-$TRAVIS_BRANCH-osx.pkg
+export FILENAME="OBS-SportsBooth-Mac.pkg"
 
 cd ./build
 
-# # Move the CEF plugin out before running build_app so that it doesn't get packaged twice
-# hr "Moving CEF out to preserve linking"
-# mv ./rundir/RelWithDebInfo/obs-plugins/CEF.app ./
-# mv ./rundir/RelWithDebInfo/obs-plugins/obs-browser.so ./
-
-# # Move obslua
-# hr "Moving OBS LUA"
-# mv ./rundir/RelWithDebInfo/data/obs-scripting/obslua.so ./rundir/RelWithDebInfo/bin/
+# Move obslua
+hr "Moving OBS LUA"
+cp ./rundir/RelWithDebInfo/data/obs-scripting/obslua.so ./rundir/RelWithDebInfo/bin/
 
 # Move obspython
 # hr "Moving OBS Python"
@@ -37,10 +33,18 @@ fi
 
 sudo python ../CI/install/osx/build_app.py --public-key ../CI/install/osx/OBSPublicDSAKey.pem --base-url "https://obsproject.com/osx_update" --stable=$STABLE
 
-# # Move the CEF plugin back to where it belongs
-# hr "Moving CEF back"
-# mv ./CEF.app ./rundir/RelWithDebInfo/obs-plugins/
-# mv ./obs-browser.so ./rundir/RelWithDebInfo/obs-plugins/
+# # Copy Chromium embedded framework to app Frameworks directory
+# hr "Copying Chromium Embedded Framework.framework"
+# sudo mkdir -p OBS.app/Contents/Frameworks
+# sudo cp -r ../../cef_binary_3.3282.1726.gc8368c8_macosx64/Release/Chromium\ Embedded\ Framework.framework OBS.app/Contents/Frameworks/
+# sudo install_name_tool -change \
+# 	@rpath/Frameworks/Chromium\ Embedded\ Framework.framework/Chromium\ Embedded\ Framework \
+# 	../../Frameworks/Chromium\ Embedded\ Framework.framework/Chromium\ Embedded\ Framework \
+# 	OBS.app/Contents/Resources/obs-plugins/obs-browser.so
+# sudo install_name_tool -change \
+# 	@rpath/Frameworks/Chromium\ Embedded\ Framework.framework/Chromium\ Embedded\ Framework \
+# 	../../Frameworks/Chromium\ Embedded\ Framework.framework/Chromium\ Embedded\ Framework \
+# 	OBS.app/Contents/Resources/obs-plugins/cef-bootstrap
 
 # Package app
 hr "Generating .pkg"
@@ -59,10 +63,9 @@ packagesbuild ../CI/install/osx/CMakeLists.pkgproj
 # # macOS 10.12+
 # security set-key-partition-list -S apple-tool:,apple: -s -k mysecretpassword build.keychain
 # hr "Signing Package"
-# productsign --sign 2MMRE5MTB8 ./OBS.pkg ./$FILENAME
-mv ./OBS.pkg ./$FILENAME
+productsign --sign 7RC93BGHNY ./OBS.pkg ./$FILENAME
 # Move to the folder that travis uses to upload artifacts from
 hr "Moving package to nightly folder for distribution"
-rm -rf ../nightly
+rm -rf ../nightly ./OBS.pkg
 mkdir ../nightly
 sudo mv ./$FILENAME ../nightly

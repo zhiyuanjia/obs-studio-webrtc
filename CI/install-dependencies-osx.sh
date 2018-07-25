@@ -4,7 +4,7 @@ set -e
 # Echo all commands before executing
 set -v
 
-git fetch --unshallow
+# git fetch --unshallow
 
 # Leave obs-studio folder
 cd ../
@@ -37,9 +37,9 @@ tar -xf ./sparkle.tar.bz2 -C ./sparkle
 sudo cp -R ./sparkle/Sparkle.framework /Library/Frameworks/Sparkle.framework
 
 # CEF Stuff
-wget --retry-connrefused --waitretry=1 https://obs-nightly.s3-us-west-2.amazonaws.com/cef_binary_${CEF_BUILD_VERSION}_macosx64.tar.bz2
-tar -xf ./cef_binary_${CEF_BUILD_VERSION}_macosx64.tar.bz2
-cd ./cef_binary_${CEF_BUILD_VERSION}_macosx64
+wget --retry-connrefused --waitretry=1 https://obs-nightly.s3-us-west-2.amazonaws.com/cef_binary_3.3282.1726.gc8368c8_macosx64.tar.bz2
+tar -xf ./cef_binary_3.3282.1726.gc8368c8_macosx64.tar.bz2
+cd ./cef_binary_3.3282.1726.gc8368c8_macosx64
 # remove a broken test
 sed -i '.orig' '/add_subdirectory(tests\/ceftests)/d' ./CMakeLists.txt
 mkdir build
