@@ -71,6 +71,14 @@ bool SportsBoothWebsocketClientImpl::connect(std::string url, long long room, st
                     auto parsedDataJson = json::parse(parsedData);
                     std::string sdpAnswer = parsedDataJson["sdpAnswer"];
                     listener->onOpened(sdpAnswer);
+                } else if (method == "presenterResponse") {
+                    std::cout << "Got Presenter Response from Worsh!" << std::endl;
+                    std::string parsedData = msg["data"];
+                    std::cout << parsedData << std::endl;
+                    auto parsedDataJson = json::parse(parsedData);
+                    std::string errorMessage = parsedDataJson["message"];
+                    this -> disconnect(false);
+                    listener->onDisconnected();
                 } else if (method == "iceCandidate") {
                     std::cout << "Got ICE Candidate from Worsh!" << std::endl;
                     std::string parsedData = msg["data"];
@@ -232,24 +240,25 @@ bool SportsBoothWebsocketClientImpl::trickle(const std::string &mid, int index, 
 
 bool SportsBoothWebsocketClientImpl::disconnect(bool wait)
 {
+    std::cout << "Disconnecting!" << std::endl;
     try
     {
-        json data = {
-                { "user", login }
-        };
-        json stopMsg = {
-                { "method"    , "stop" },
-                { "treeId" , login },
-                { "data", data.dump() }
-        };
-        sendMessage("/topic/tree.status.update", stopMsg.dump());
-        while (!msgs_to_send.empty()) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(50));
-        }
-        std::cout << "Stop Message Sent" << std::endl;
-
         // Stop send thread
         if (thread_send.joinable()){
+            json data = {
+                    { "user", login }
+            };
+            json stopMsg = {
+                    { "method"    , "stop" },
+                    { "treeId" , login },
+                    { "data", data.dump() }
+            };
+            sendMessage("/topic/tree.status.update", stopMsg.dump());
+            while (!msgs_to_send.empty()) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(50));
+            }
+            std::cout << "Stop Message Sent" << std::endl;
+
             is_running.store(false);
             thread_send.join();
         }
