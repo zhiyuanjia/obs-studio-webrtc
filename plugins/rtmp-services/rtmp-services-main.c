@@ -101,9 +101,9 @@ bool obs_module_load(void)
 
 	obs_register_service(&rtmp_common_service);
 	obs_register_service(&rtmp_custom_service);
-	obs_register_service(&webrtc_janus_service);
+	// obs_register_service(&webrtc_janus_service);
 	obs_register_service(&webrtc_sportsbooth_service);
-	obs_register_service(&webrtc_spankchain_service);
+	// obs_register_service(&webrtc_spankchain_service);
 	return true;
 }
 

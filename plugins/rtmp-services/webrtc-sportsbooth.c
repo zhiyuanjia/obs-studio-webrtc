@@ -49,9 +49,6 @@ static obs_properties_t *webrtc_sportsbooth_properties(void *unused)
     p = obs_properties_add_list(ppts, "server", "Server URL", OBS_COMBO_TYPE_LIST, OBS_COMBO_FORMAT_STRING);
     obs_property_list_add_string(p, "SportsBooth", "wss://sportsbooth.tv/websocket/websocket");
 
-//    obs_property_list_add_string(p, "SportsBooth Dev", "wss://worsh.tv/websocket/websocket");
-//    obs_property_list_add_string(p, "SportsBooth Local", "wss://dev.worsh.tv/websocket/websocket");
-
     obs_properties_add_text(ppts, "token", obs_module_text("Token"),OBS_TEXT_PASSWORD);
 
 	return ppts;
