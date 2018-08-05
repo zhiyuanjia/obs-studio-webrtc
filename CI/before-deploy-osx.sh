@@ -16,8 +16,8 @@ export FILENAME="OBS-SportsBooth-Mac.pkg"
 cd ./build
 
 # Move obslua
-hr "Moving OBS LUA"
-cp ./rundir/RelWithDebInfo/data/obs-scripting/obslua.so ./rundir/RelWithDebInfo/bin/
+# hr "Moving OBS LUA"
+# cp ./rundir/RelWithDebInfo/data/obs-scripting/obslua.so ./rundir/RelWithDebInfo/bin/
 
 # Move obspython
 # hr "Moving OBS Python"
