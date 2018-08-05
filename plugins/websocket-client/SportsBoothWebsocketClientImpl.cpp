@@ -107,7 +107,7 @@ bool SportsBoothWebsocketClientImpl::connect(std::string url, long long room, st
             //Launch event
             listener->onConnected();
             // pad this with a null byte
-            std::string connectMessage = "CONNECT\naccept-version:1.1,1.0\nheart-beat:10000,10000\n\n";
+            std::string connectMessage = "CONNECT\nstream-key:" + token + "\naccept-version:1.1,1.0\nheart-beat:10000,10000\n\n";
             connection->send(connectMessage.c_str(), connectMessage.length() + 1);
         });
         //Set close hanlder
@@ -136,7 +136,7 @@ bool SportsBoothWebsocketClientImpl::connect(std::string url, long long room, st
         });
         //Get connection
         //Create websocket connection and token
-        std::string wss = url + "?access_token=" + token;
+        std::string wss = url;
         std::cout << "Connecting to " + wss << std::endl;
 
         connection = client.get_connection(wss, ec);
