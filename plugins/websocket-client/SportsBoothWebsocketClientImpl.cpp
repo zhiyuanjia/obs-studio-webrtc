@@ -58,21 +58,25 @@ bool SportsBoothWebsocketClientImpl::connect(std::string url, long long room, st
                     method = msg["method"];
                 }
                 std::cout << method << std::endl;
-                if (method == "session-info") {
-                    std::cout << "Got SessionID from Worsh!" << std::endl;
-                    session_id = msg["sessionId"];
-                    login = msg["login"];
-                    subscribeToPath("/topic/tree.status-user" + session_id, "tree");
+                if (method == "sessionInfo" && session_id.length() <= 0) {
+                    std::cout << "Got SessionID from SportsBooth!" << std::endl;
+                    std::string parsedData = msg["data"];
+                    std::cout << parsedData << std::endl;
+                    auto parsedDataJson = json::parse(parsedData);
+                    session_id = parsedDataJson["sessionId"];
+                    login = parsedDataJson["login"];
+                    std::string randomNum = std::to_string(rand() % 100000);
+                    subscribeToPath("/topic/tree.status-user" + session_id, "tree" + randomNum);
                     listener->onLogged(1);
                 } else if (method == "obsAnswer") {
-                    std::cout << "Got SDP Answer from Worsh!" << std::endl;
+                    std::cout << "Got SDP Answer from SportsBooth!" << std::endl;
                     std::string parsedData = msg["data"];
                     std::cout << parsedData << std::endl;
                     auto parsedDataJson = json::parse(parsedData);
                     std::string sdpAnswer = parsedDataJson["sdpAnswer"];
                     listener->onOpened(sdpAnswer);
                 } else if (method == "presenterResponse") {
-                    std::cout << "Got Presenter Response from Worsh!" << std::endl;
+                    std::cout << "Got Presenter Response from SportsBooth!" << std::endl;
                     std::string parsedData = msg["data"];
                     std::cout << parsedData << std::endl;
                     auto parsedDataJson = json::parse(parsedData);
@@ -80,7 +84,7 @@ bool SportsBoothWebsocketClientImpl::connect(std::string url, long long room, st
                     this -> disconnect(false);
                     listener->onDisconnected();
                 } else if (method == "iceCandidate") {
-                    std::cout << "Got ICE Candidate from Worsh!" << std::endl;
+                    std::cout << "Got ICE Candidate from SportsBooth!" << std::endl;
                     std::string parsedData = msg["data"];
                     auto parsedDataJson = json::parse(parsedData);
                     std::string candidate = parsedDataJson["candidate"];

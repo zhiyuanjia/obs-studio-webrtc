@@ -5,6 +5,6 @@ mkdir build
 cd build
 cmake \
 -DDepsPath=/tmp/obsdeps \
--DVLCPath=$PWD/../../vlc-master ..
+-DVLCPath=$PWD/../../vlc-master \
 -DCMAKE_INSTALL_PREFIX=/opt/obs \
 -DCMAKE_BUILD_TYPE=RelWithDebInfo ..
